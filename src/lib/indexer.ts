@@ -8,7 +8,7 @@ const debounce = (func: (...args: any[]) => void, wait: number) => {
   let timeout: NodeJS.Timeout;
   return function (...args: any[]) {
     clearTimeout(timeout);
-    timeout = setTimeout(() => func.apply(this, args), wait);
+    timeout = setTimeout(() => func(...args), wait);
   };
 };
 
@@ -69,17 +69,17 @@ function generateExportStatements(files: string[], folderPath: string, watchedFo
 
       if (exportDetails.length === 1 && exportDetails[0].type === "default") {
         exportLines.push(`export * from "./${path.basename(file, path.extname(file))}";`);
-      } else if (exportDetails.find(({ type }) => type === "default")) {
-        const defaultExport = exportDetails.find(({ type }) => type === "default")!;
-        const namedExports = exportDetails.filter(({ type }) => type === "named").map(({ name }) => name).join(", ");
-        if (namedExports) {
-          exportLines.push(`export { default as ${defaultExport.name}, ${namedExports} } from "./${path.basename(file, path.extname(file))}";`);
-        } else {
-          exportLines.push(`export { default as ${defaultExport.name} } from "./${path.basename(file, path.extname(file))}";`);
+      } else {
+        const defaultExport = exportDetails.find(({ type }) => type === "default");
+        const namedExports = exportDetails.filter(({ type }) => type === "named").map(({ name }) => name);
+
+        if (defaultExport) {
+          exportLines.push(
+            `export { default as ${defaultExport.name}${namedExports.length ? `, ${namedExports.join(", ")}` : ""} } from "./${path.basename(file, path.extname(file))}";`
+          );
+        } else if (namedExports.length > 0) {
+          exportLines.push(`export { ${namedExports.join(", ")} } from "./${path.basename(file, path.extname(file))}";`);
         }
-      } else if (exportDetails.length > 0) {
-        const namedExports = exportDetails.map(({ name }) => name).join(", ");
-        exportLines.push(`export { ${namedExports} } from "./${path.basename(file, path.extname(file))}";`);
       }
     }
   });
