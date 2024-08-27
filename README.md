@@ -7,6 +7,7 @@
 - **Automatic Indexing**: Automatically updates `index.tsx` files to export components and modules.
 - **Recursive Directory Handling**: Recursively updates index files for all subdirectories.
 - **Watch Mode**: Watches specified folders for file changes and updates the index files accordingly.
+- **Run Once Mode**: Run the script just once without watching for changes.
 - **Configurable**: Allows configuration of folders to watch through a JSON config file.
 - **Batched Logging**: Reduces frequent logging and logs updates in batches.
 
@@ -34,15 +35,25 @@ Create a file in the root directory of your project with the following structure
 
 To start the indexer, run:
 
-```bash
+```batch
 tsx-auto-indexer
 ```
 
-This will read the file and start watching the specified folders. It will automatically update files when changes are detected.
+This will read the config file and start watching the specified folders. It will automatically update files when changes are detected.
 
-### Example
+### Run the Indexer Once
 
-***Config File Example***
+To run the indexer just once without watching for file changes, run:
+
+```bash
+tsx-auto-indexer --once
+```
+
+This will read the config file and generate all indexes in a single run without keeping the watcher active.
+
+## Example
+
+### Config File Example
 
 ```json
 {
@@ -50,7 +61,7 @@ This will read the file and start watching the specified folders. It will automa
 }
 ```
 
-***Directory Structure Example*** 
+### Directory Structure Example
 
 ```bash
 project-root/
@@ -80,20 +91,13 @@ After running tsx-auto-indexer, the files will be updated to export all componen
 
 ### Setup
 
-- Clone the Repository
+1. Clone the Repository
+2. git clone <https://github.com/baudevs/tsx-auto-indexer.git>
+3. cd tsx-auto-indexer
+4. Install Dependencies
+5. npm install
 
-```bash
-git clone https://github.com/baudevs/tsx-auto-indexer.git
-cd tsx-auto-indexer
-```
-
-- Install Dependencies
-
-```bash
-npm install
-```
-
-- Build the Project
+### Build the Project
 
 ```bash
 npm run build
@@ -123,21 +127,22 @@ tsx-auto-indexer/
 
 ### Scripts
 
-*npm run build*: Compiles TypeScript to JavaScript.
-*npm run dev*: Runs the project in development mode using ts-node.
-*npm start*: Runs the compiled JavaScript files.
+- npm run build: Compiles TypeScript to JavaScript.
+- npm run dev: Runs the project in development mode using ts-node.
+- npm start: Runs the compiled JavaScript files.
+
 
 ## Contributing
 
 Contributions are welcome! Please open an issue or submit a pull request for any improvements or bug fixes.
 
-### Steps to Contribute
+## Steps to Contribute
 
-1. Fork the repository.
-2. Create a new branch: git checkout -b feature/your-feature-name.
-3. Make your changes and commit them: git commit -m 'Add some feature'.
-4. Push to the branch: git push origin feature/your-feature-name.
-5. Open a pull request.
+- Fork the repository.
+- Create a new branch: git checkout -b feature/your-feature-name.
+- Make your changes and commit them: git commit -m 'Add some feature'.
+- Push to the branch: git push origin feature/your-feature-name.
+- Open a pull request.
 
 ## License
 
@@ -149,4 +154,4 @@ For any questions or support, please open an issue in this repository.
 
 Happy coding!
 
-tsx-auto-indexer - Automatically manage and organize your TypeScript exports.
+***tsx-auto-indexer - Automatically manage and organize your TypeScript exports.***
