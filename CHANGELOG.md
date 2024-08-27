@@ -1,9 +1,23 @@
+
 # Changelog
 
 All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [1.0.6] - 2023-10-04
+
+### Fixed
+
+- Correctly handle single default exports, multiple named exports, and files with both default and named exports:
+  - Single default exports use `export * from './file';`
+  - Named exports use `export { namedExport1, namedExport2 } from './file'`
+  - Both default and named exports use `export { default as DefaultExport, namedExport1, namedExport2 } from './file';`
+- Added functionality to ignore specified files during indexing.
+- Ensure async functions with default exports are handled correctly.
+- Ensure ignored files listed in the config.json are properly excluded from export.
+- Track and rename duplicate named exports to avoid conflicts.
 
 ## [1.0.5] - 2023-10-04
 
@@ -14,6 +28,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Named exports use `export { namedExport1, namedExport2 } from './file'`
   - Both default and named exports use `export { default as DefaultExport, namedExport1, namedExport2 } from './file';`
 - Added functionality to ignore specified files during indexing.
+- Ensure async functions with default exports are handled correctly.
+- Ensure ignored files listed in the config.json are properly excluded from export.
+- Track and rename duplicate named exports to avoid conflicts.
 
 ## [1.0.4] - 2023-10-04
 
