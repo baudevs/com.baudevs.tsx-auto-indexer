@@ -51,7 +51,7 @@ function shouldSkipIndexFileCreation(folderPath: string, watchedFolders: string[
   return watchedFolders.includes(folderPath);
 }
 
-function generateExportStatements(files: string[], folderPath: string, watchedFolders: string[]): string[] {
+function generateExportStatements(files: string[], folderPath: string, watchedFolders: string[], ignoreFiles: string[]): string[] {
   const exportLines: string[] = [];
 
   files.forEach((file) => {
@@ -60,26 +60,34 @@ function generateExportStatements(files: string[], folderPath: string, watchedFo
     const isFileJsxTsx = file.endsWith(".jsx") || file.endsWith(".tsx");
 
     if (isDirectory) {
-      updateIndexFile(fullPath, watchedFolders); // Recursively update index.tsx in subdirectories
+      updateIndexFile(fullPath, watchedFolders, ignoreFiles); // Recursively update index.tsx in subdirectories
       if (!shouldSkipIndexFileCreation(folderPath, watchedFolders)) {
         exportLines.push(`export * from "./${file}";`);
       }
-    } else if (isFileJsxTsx && file !== "index.tsx") {
+    } else if (isFileJsxTsx && file !== "index.tsx" && !ignoreFiles.includes(fullPath)) {
       const exportDetails = extractExportNames(fullPath);
-      exportDetails.forEach(({ name, type }) => {
-        if (type === "default") {
-          exportLines.push(`export ${name} from "./${path.basename(file, path.extname(file))}";`);
+
+      if (exportDetails.length === 1 && exportDetails[0].type === "default") {
+        exportLines.push(`export * from "./${path.basename(file, path.extname(file))}";`);
+      } else if (exportDetails.find(({ type }) => type === "default")) {
+        const defaultExport = exportDetails.find(({ type }) => type === "default")!;
+        const namedExports = exportDetails.filter(({ type }) => type === "named").map(({ name }) => name).join(", ");
+        if (namedExports) {
+          exportLines.push(`export { default as ${defaultExport.name}, ${namedExports} } from "./${path.basename(file, path.extname(file))}";`);
         } else {
-          exportLines.push(`export { ${name} } from "./${path.basename(file, path.extname(file))}";`);
+          exportLines.push(`export { default as ${defaultExport.name} } from "./${path.basename(file, path.extname(file))}";`);
         }
-      });
+      } else if (exportDetails.length > 0) {
+        const namedExports = exportDetails.map(({ name }) => name).join(", ");
+        exportLines.push(`export { ${namedExports} } from "./${path.basename(file, path.extname(file))}";`);
+      }
     }
   });
 
   return exportLines;
 }
 
-export function updateIndexFile(folderPath: string, watchedFolders: string[]): void {
+export function updateIndexFile(folderPath: string, watchedFolders: string[], ignoreFiles: string[]): void {
   if (!fs.existsSync(folderPath)) {
     console.warn(`Directory not found: ${folderPath}`);
     return;
@@ -90,7 +98,7 @@ export function updateIndexFile(folderPath: string, watchedFolders: string[]): v
     return;
   }
 
-  const exportLines = generateExportStatements(files, folderPath, watchedFolders);
+  const exportLines = generateExportStatements(files, folderPath, watchedFolders, ignoreFiles);
   const indexFilePath = path.join(folderPath, "index.tsx");
 
   fs.writeFileSync(indexFilePath, exportLines.join("\n"), { encoding: "utf8" });
@@ -98,7 +106,7 @@ export function updateIndexFile(folderPath: string, watchedFolders: string[]): v
   debouncedLog();
 }
 
-export function addWatcher(folderPath: string, watchedFolders: string[]): void {
+export function addWatcher(folderPath: string, watchedFolders: string[], ignoreFiles: string[]): void {
   if (!fs.existsSync(folderPath)) {
     console.warn(`Directory not found: ${folderPath}`);
     return;
@@ -107,26 +115,26 @@ export function addWatcher(folderPath: string, watchedFolders: string[]): void {
   const watcher = chokidar.watch(folderPath, { persistent: true });
 
   watcher.on("add", (filePath) => {
-    updateIndexFile(folderPath, watchedFolders);
+    updateIndexFile(folderPath, watchedFolders, ignoreFiles);
     logQueue.push(`File added: ${filePath}`);
     debouncedLog();
   });
 
   watcher.on("unlink", (filePath) => {
-    updateIndexFile(folderPath, watchedFolders);
+    updateIndexFile(folderPath, watchedFolders, ignoreFiles);
     logQueue.push(`File removed: ${filePath}`);
     debouncedLog();
   });
 
   watcher.on("addDir", (dirPath) => {
-    addWatcher(dirPath, watchedFolders);
-    updateIndexFile(folderPath, watchedFolders);
+    addWatcher(dirPath, watchedFolders, ignoreFiles);
+    updateIndexFile(folderPath, watchedFolders, ignoreFiles);
     logQueue.push(`Directory added: ${dirPath}`);
     debouncedLog();
   });
 
   watcher.on("unlinkDir", (dirPath) => {
-    updateIndexFile(folderPath, watchedFolders);
+    updateIndexFile(folderPath, watchedFolders, ignoreFiles);
     logQueue.push(`Directory removed: ${dirPath}`);
     debouncedLog();
   });

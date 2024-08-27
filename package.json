@@ -1,6 +1,6 @@
 {
   "name": "@baudevs/tsx-auto-indexer",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "description": "Automatically updates and manages index.tsx files for your project, keeping your exports organized and reducing manual work.",
   "main": "dist/index.js",
   "bin": {
