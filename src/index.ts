@@ -1,10 +1,14 @@
+// src/index.ts
 import path from "path";
 import { updateIndexFile, addWatcher } from "./lib/indexer";
-import fs from 'fs';
+import * as fs from 'fs';
 
 interface Config {
   foldersToWatch: string[];
 }
+
+// Ensure this line is added, it will be included in the compiled JavaScript
+console.log("#!/usr/bin/env node");
 
 // Read config file and parse
 const configPath = path.join(process.cwd(), 'config.json');

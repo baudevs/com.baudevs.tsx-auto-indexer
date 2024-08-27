@@ -1,37 +1,37 @@
 {
-    "name": "@baudevs/tsx-auto-indexer",
-    "version": "1.0.0",
-    "description": "Automatically updates and manages index.tsx files for your project, keeping your exports organized and reducing manual work.",
-    "main": "dist/index.js",
-    "bin": {
-      "tsx-auto-indexer": "dist/index.js"
-    },
-    "scripts": {
-      "start": "node dist/index.js",
-      "build": "tsc",
-      "dev": "ts-node src/index.ts"
-    },
-    "repository": {
-      "type": "git",
-      "url": "https://github.com/yourusername/tsx-auto-indexer.git"
-    },
-    "keywords": [
-      "index",
-      "typescript",
-      "javascript",
-      "automation",
-      "export",
-      "tsx",
-      "indexer"
-    ],
-    "author": "Your Name <youremail@example.com>",
-    "license": "MIT",
-    "dependencies": {
-      "chokidar": "^3.6.0"
-    },
-    "devDependencies": {
-      "typescript": "^4.5.4",
-      "@types/node": "^16.11.10",
-      "ts-node": "^10.4.0"
-    }
+  "name": "tsx-auto-indexer",
+  "version": "1.0.1",
+  "description": "Automatically updates and manages index.tsx files for your project, keeping your exports organized and reducing manual work.",
+  "main": "dist/index.js",
+  "bin": {
+    "tsx-auto-indexer": "./dist/index.js"
+  },
+  "scripts": {
+    "start": "node ./dist/index.js",
+    "build": "tsc",
+    "dev": "ts-node src/index.ts"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/baudevs/tsx-auto-indexer.git"
+  },
+  "keywords": [
+    "index",
+    "typescript",
+    "javascript",
+    "automation",
+    "export",
+    "tsx",
+    "indexer"
+  ],
+  "author": "BauDevs <dev@baudevs.com>",
+  "license": "MIT",
+  "dependencies": {
+    "chokidar": "^3.6.0"
+  },
+  "devDependencies": {
+    "typescript": "^4.5.4",
+    "@types/node": "^16.11.10",
+    "ts-node": "^10.4.0"
   }
+}
