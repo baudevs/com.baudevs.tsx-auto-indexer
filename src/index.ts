@@ -1,6 +1,6 @@
 import path from "path";
+import fs from "fs";
 import { updateIndexFile, addWatcher } from "./lib/indexer";
-import * as fs from 'fs';
 
 interface Config {
   foldersToWatch: string[];
@@ -10,11 +10,11 @@ interface Config {
 console.log("#!/usr/bin/env node");
 
 // Read config file and parse
-const configPath = path.join(process.cwd(), 'config.json');
-const config: Config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+const configPath = path.join(process.cwd(), "config.json");
+const config: Config = JSON.parse(fs.readFileSync(configPath, "utf8"));
 
 // Default folders to watch if none provided
-const foldersToWatch: string[] = config.foldersToWatch || ["app", "styles", "public/img"];
+const foldersToWatch: string[] = config.foldersToWatch || ["app", "styles"];
 
 // Run initial indexing and setup watchers
 foldersToWatch.forEach((folder) => {

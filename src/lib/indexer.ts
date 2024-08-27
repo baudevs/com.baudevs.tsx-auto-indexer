@@ -4,15 +4,15 @@ import chokidar from "chokidar";
 
 let logQueue: string[] = [];
 
-const debouncedLog = debounce(logChanges, 500);
-
-function debounce(func: (...args: any[]) => void, wait: number) {
+const debounce = (func: (...args: any[]) => void, wait: number) => {
   let timeout: NodeJS.Timeout;
-  return function (this: any, ...args: any[]) {
+  return function (...args: any[]) {
     clearTimeout(timeout);
     timeout = setTimeout(() => func.apply(this, args), wait);
   };
-}
+};
+
+const debouncedLog = debounce(logChanges, 500);
 
 function logChanges() {
   if (logQueue.length > 0) {
@@ -23,7 +23,7 @@ function logChanges() {
 
 interface ExportDetail {
   name: string;
-  type: 'named' | 'default';
+  type: "named" | "default";
 }
 
 function extractExportNames(filePath: string): ExportDetail[] {
@@ -34,17 +34,49 @@ function extractExportNames(filePath: string): ExportDetail[] {
   const namedExportRegex = /export\s+(?:const|function|class|interface|type|enum)\s+(\w+)/g;
   let namedMatch;
   while ((namedMatch = namedExportRegex.exec(content)) !== null) {
-    exportDetails.push({ name: namedMatch[1], type: 'named' });
+    exportDetails.push({ name: namedMatch[1], type: "named" });
   }
 
   // Default export regex
   const defaultExportRegex = /export\s+default\s+(\w+)/;
   const defaultMatch = content.match(defaultExportRegex);
   if (defaultMatch && defaultMatch[1]) {
-    exportDetails.push({ name: defaultMatch[1], type: 'default' });
+    exportDetails.push({ name: defaultMatch[1], type: "default" });
   }
 
   return exportDetails;
+}
+
+function shouldSkipIndexFileCreation(folderPath: string, watchedFolders: string[]): boolean {
+  return watchedFolders.includes(folderPath);
+}
+
+function generateExportStatements(files: string[], folderPath: string, watchedFolders: string[]): string[] {
+  const exportLines: string[] = [];
+
+  files.forEach((file) => {
+    const fullPath = path.join(folderPath, file);
+    const isDirectory = fs.lstatSync(fullPath).isDirectory();
+    const isFileJsxTsx = file.endsWith(".jsx") || file.endsWith(".tsx");
+
+    if (isDirectory) {
+      updateIndexFile(fullPath, watchedFolders); // Recursively update index.tsx in subdirectories
+      if (!shouldSkipIndexFileCreation(folderPath, watchedFolders)) {
+        exportLines.push(`export * from "./${file}";`);
+      }
+    } else if (isFileJsxTsx && file !== "index.tsx") {
+      const exportDetails = extractExportNames(fullPath);
+      exportDetails.forEach(({ name, type }) => {
+        if (type === "default") {
+          exportLines.push(`export ${name} from "./${path.basename(file, path.extname(file))}";`);
+        } else {
+          exportLines.push(`export { ${name} } from "./${path.basename(file, path.extname(file))}";`);
+        }
+      });
+    }
+  });
+
+  return exportLines;
 }
 
 export function updateIndexFile(folderPath: string, watchedFolders: string[]): void {
@@ -54,39 +86,15 @@ export function updateIndexFile(folderPath: string, watchedFolders: string[]): v
   }
 
   const files = fs.readdirSync(folderPath);
-  const isRootFolder = watchedFolders.includes(folderPath);
-
-  const exportLines: string[] = [];
-
-  files.forEach(file => {
-    const fullPath = path.join(folderPath, file);
-    const isDirectory = fs.lstatSync(fullPath).isDirectory();
-    const isFileJs = file.endsWith(".jsx") || file.endsWith(".tsx");
-
-    if (isDirectory) {
-      updateIndexFile(fullPath, watchedFolders); // Recursively update index.tsx in subdirectories
-      if (!isRootFolder) {
-        exportLines.push(`export * from "./${file}";`);
-      }
-    } else if (isFileJs && file !== "index.tsx") {
-      const exportDetails = extractExportNames(fullPath);
-      exportDetails.forEach(({ name, type }) => {
-        if (type === 'default') {
-          exportLines.push(`export ${name} from "./${path.basename(file, path.extname(file))}";`);
-        } else {
-          exportLines.push(`export { ${name} } from "./${path.basename(file, path.extname(file))}";`);
-        }
-      });
-
-    }
-  });
-
-  if (!isRootFolder) {
-    const indexFilePath = path.join(folderPath, "index.tsx");
-    fs.writeFileSync(indexFilePath, exportLines.join("\n"), { encoding: "utf8" });
-    logQueue.push(`Updated ${indexFilePath}`);
+  if (shouldSkipIndexFileCreation(folderPath, watchedFolders)) {
+    return;
   }
 
+  const exportLines = generateExportStatements(files, folderPath, watchedFolders);
+  const indexFilePath = path.join(folderPath, "index.tsx");
+
+  fs.writeFileSync(indexFilePath, exportLines.join("\n"), { encoding: "utf8" });
+  logQueue.push(`Updated ${indexFilePath}`);
   debouncedLog();
 }
 
