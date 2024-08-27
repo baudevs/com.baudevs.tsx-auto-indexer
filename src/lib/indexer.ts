@@ -21,23 +21,22 @@ function logChanges() {
   }
 }
 
-function extractExportName(filePath: string): string | null {
+function extractExportName(filePath: string): { name: string | null, type: 'named' | 'default' | null } {
   const content = fs.readFileSync(filePath, "utf8");
-  const exportRegex = /export\s+{\s*(\w+)\s*}\s+from\s+["'`].\/(\w+)["'`];/;
-  const match = content.match(exportRegex);
-
-  if (match && match[1]) {
-    return match[1];
-  }
-
+  const namedExportRegex = /export\s+(?:const|function|class|interface|type|enum)\s+(\w+)/;
   const defaultExportRegex = /export\s+default\s+(\w+)/;
-  const defaultMatch = content.match(defaultExportRegex);
 
-  if (defaultMatch && defaultMatch[1]) {
-    return defaultMatch[1];
+  const namedMatch = content.match(namedExportRegex);
+  if (namedMatch && namedMatch[1]) {
+    return { name: namedMatch[1], type: 'named' };
   }
 
-  return null;
+  const defaultMatch = content.match(defaultExportRegex);
+  if (defaultMatch && defaultMatch[1]) {
+    return { name: defaultMatch[1], type: 'default' };
+  }
+
+  return { name: null, type: null };
 }
 
 export function updateIndexFile(folderPath: string): void {
@@ -59,8 +58,12 @@ export function updateIndexFile(folderPath: string): void {
       exportLines.push(`export * from "./${file}";`);
     } 
     else if (isFileJs && file !== "index.tsx") {
-      const exportName = extractExportName(fullPath) || path.basename(file, path.extname(file));
-      exportLines.push(`export { ${exportName} } from "./${path.basename(file, path.extname(file))}";`);
+      const { name, type } = extractExportName(fullPath) || { name: path.basename(file, path.extname(file)), type: 'named' };
+      if (type === 'default') {
+        exportLines.push(`export ${name} from "./${path.basename(file, path.extname(file))}";`);
+      } else {
+        exportLines.push(`export { ${name} } from "./${path.basename(file, path.extname(file))}";`);
+      }
     }
   });
 
