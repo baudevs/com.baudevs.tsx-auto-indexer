@@ -21,31 +21,41 @@ function logChanges() {
   }
 }
 
-function extractExportName(filePath: string): { name: string | null, type: 'named' | 'default' | null } {
-  const content = fs.readFileSync(filePath, "utf8");
-  const namedExportRegex = /export\s+(?:const|function|class|interface|type|enum)\s+(\w+)/;
-  const defaultExportRegex = /export\s+default\s+(\w+)/;
-
-  const namedMatch = content.match(namedExportRegex);
-  if (namedMatch && namedMatch[1]) {
-    return { name: namedMatch[1], type: 'named' };
-  }
-
-  const defaultMatch = content.match(defaultExportRegex);
-  if (defaultMatch && defaultMatch[1]) {
-    return { name: defaultMatch[1], type: 'default' };
-  }
-
-  return { name: null, type: null };
+interface ExportDetail {
+  name: string;
+  type: 'named' | 'default';
 }
 
-export function updateIndexFile(folderPath: string): void {
-  if (!fs.existsSync(folderPath)) { 
+function extractExportNames(filePath: string): ExportDetail[] {
+  const content = fs.readFileSync(filePath, "utf8");
+  const exportDetails: ExportDetail[] = [];
+
+  // Named export regex
+  const namedExportRegex = /export\s+(?:const|function|class|interface|type|enum)\s+(\w+)/g;
+  let namedMatch;
+  while ((namedMatch = namedExportRegex.exec(content)) !== null) {
+    exportDetails.push({ name: namedMatch[1], type: 'named' });
+  }
+
+  // Default export regex
+  const defaultExportRegex = /export\s+default\s+(\w+)/;
+  const defaultMatch = content.match(defaultExportRegex);
+  if (defaultMatch && defaultMatch[1]) {
+    exportDetails.push({ name: defaultMatch[1], type: 'default' });
+  }
+
+  return exportDetails;
+}
+
+export function updateIndexFile(folderPath: string, watchedFolders: string[]): void {
+  if (!fs.existsSync(folderPath)) {
     console.warn(`Directory not found: ${folderPath}`);
     return;
   }
 
   const files = fs.readdirSync(folderPath);
+  const isRootFolder = watchedFolders.includes(folderPath);
+
   const exportLines: string[] = [];
 
   files.forEach(file => {
@@ -54,26 +64,33 @@ export function updateIndexFile(folderPath: string): void {
     const isFileJs = file.endsWith(".jsx") || file.endsWith(".tsx");
 
     if (isDirectory) {
-      updateIndexFile(fullPath); // Recursively update index.tsx in subdirectories
-      exportLines.push(`export * from "./${file}";`);
-    } 
-    else if (isFileJs && file !== "index.tsx") {
-      const { name, type } = extractExportName(fullPath) || { name: path.basename(file, path.extname(file)), type: 'named' };
-      if (type === 'default') {
-        exportLines.push(`export ${name} from "./${path.basename(file, path.extname(file))}";`);
-      } else {
-        exportLines.push(`export { ${name} } from "./${path.basename(file, path.extname(file))}";`);
+      updateIndexFile(fullPath, watchedFolders); // Recursively update index.tsx in subdirectories
+      if (!isRootFolder) {
+        exportLines.push(`export * from "./${file}";`);
       }
+    } else if (isFileJs && file !== "index.tsx") {
+      const exportDetails = extractExportNames(fullPath);
+      exportDetails.forEach(({ name, type }) => {
+        if (type === 'default') {
+          exportLines.push(`export ${name} from "./${path.basename(file, path.extname(file))}";`);
+        } else {
+          exportLines.push(`export { ${name} } from "./${path.basename(file, path.extname(file))}";`);
+        }
+      });
+
     }
   });
 
-  const indexFilePath = path.join(folderPath, "index.tsx");
-  fs.writeFileSync(indexFilePath, exportLines.join("\n"), { encoding: "utf8" });
-  logQueue.push(`Updated ${indexFilePath}`);
+  if (!isRootFolder) {
+    const indexFilePath = path.join(folderPath, "index.tsx");
+    fs.writeFileSync(indexFilePath, exportLines.join("\n"), { encoding: "utf8" });
+    logQueue.push(`Updated ${indexFilePath}`);
+  }
+
   debouncedLog();
 }
 
-export function addWatcher(folderPath: string): void {
+export function addWatcher(folderPath: string, watchedFolders: string[]): void {
   if (!fs.existsSync(folderPath)) {
     console.warn(`Directory not found: ${folderPath}`);
     return;
@@ -82,26 +99,26 @@ export function addWatcher(folderPath: string): void {
   const watcher = chokidar.watch(folderPath, { persistent: true });
 
   watcher.on("add", (filePath) => {
-    updateIndexFile(folderPath);
+    updateIndexFile(folderPath, watchedFolders);
     logQueue.push(`File added: ${filePath}`);
     debouncedLog();
   });
 
   watcher.on("unlink", (filePath) => {
-    updateIndexFile(folderPath);
+    updateIndexFile(folderPath, watchedFolders);
     logQueue.push(`File removed: ${filePath}`);
     debouncedLog();
   });
 
   watcher.on("addDir", (dirPath) => {
-    addWatcher(dirPath);
-    updateIndexFile(folderPath);
+    addWatcher(dirPath, watchedFolders);
+    updateIndexFile(folderPath, watchedFolders);
     logQueue.push(`Directory added: ${dirPath}`);
     debouncedLog();
   });
 
   watcher.on("unlinkDir", (dirPath) => {
-    updateIndexFile(folderPath);
+    updateIndexFile(folderPath, watchedFolders);
     logQueue.push(`Directory removed: ${dirPath}`);
     debouncedLog();
   });

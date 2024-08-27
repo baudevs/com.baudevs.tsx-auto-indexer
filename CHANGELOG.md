@@ -5,15 +5,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.3] - 2023-10-04
+
+### Fixed
+
+- Corrected the creation of `index.tsx` files to avoid generating them in root and directly watched folders.
+- Enhanced `updateIndexFile` function to handle files with multiple named exports and default exports.
+- Ensured correct handling of export statements for both named and default exports.
+
 ## [1.0.2] - 2023-10-04
 
 ### Fixed
 
-- Corrected export handling for named and default exports in generated `index.tsx` files.
+- Corrected export handling for multiple named and default exports in generated `index.tsx` files.
 - Named functions are now correctly exported using `export { functionName }`.
 - Default functions are now correctly exported using `export functionName from './file'`.
-- Improved `extractExportName` function to accurately identify and parse exports.
-- Added type annotations and ensured consistent module imports.
+- Improved `extractExportNames` function to accurately identify and parse all exports.
+- Enhanced type annotations and ensured consistent module imports.
 
 ## [1.0.1] - 2023-10-04
 

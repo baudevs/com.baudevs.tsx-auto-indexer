@@ -1,4 +1,3 @@
-// src/index.ts
 import path from "path";
 import { updateIndexFile, addWatcher } from "./lib/indexer";
 import * as fs from 'fs';
@@ -20,6 +19,6 @@ const foldersToWatch: string[] = config.foldersToWatch || ["app", "styles", "pub
 // Run initial indexing and setup watchers
 foldersToWatch.forEach((folder) => {
   const fullPath = path.join(process.cwd(), folder);
-  updateIndexFile(fullPath);
-  addWatcher(fullPath);
+  updateIndexFile(fullPath, foldersToWatch);
+  addWatcher(fullPath, foldersToWatch);
 });
